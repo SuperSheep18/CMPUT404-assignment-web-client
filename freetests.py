@@ -28,8 +28,10 @@ import time
 import urlparse
 import json
 
+from time import sleep
+
 BASEHOST = '127.0.0.1'
-BASEPORT = 27600 + random.randint(1,100)
+BASEPORT = 27600# + random.randint(1,100)
 
 
 httpclass = httpclient

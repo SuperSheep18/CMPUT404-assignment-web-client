@@ -21,6 +21,7 @@
 import sys
 import socket
 import re
+import urlparse
 # you may use urllib to encode data appropriately
 import urllib
 
@@ -37,26 +38,33 @@ class HTTPClient(object):
 
     def connect(self, host, port):
         # use sockets!
-        s = socket.socket(
-        socket.AF_INET, socket.SOCK_STREAM)
-        #now connect to the web server on port 80
-        # - the normal http port
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.connect((host, port))
+        print "Conecting to:",host, "on", port
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.connect((host, port))
+            print("Connection succeeded.")
+
+        except Exception as e:
+            print "GIGAERROR: ",e
 
         return s
 
     def get_code(self, data):
-        print("Code: ", data)
-        return None
+        print "Code:", data.split(" ")[1]
+        return data.split(" ")[1]
 
     def get_headers(self,data):
-        print("Headers: ", data)
+        print "Headers:", None
         return None
 
     def get_body(self, data):
-        print("Body: ", data)
-        return None
+
+        # Accounts for carriage returns in the body of text that splitting might miss.
+        #dex = data.index("\r\n\r\n")
+        #print "Body:", data[dex+4:]
+        print "Body:", data
+        return data
 
     # read everything from the socket
     def recvall(self, sock):
@@ -71,20 +79,37 @@ class HTTPClient(object):
         return str(buffer)
 
     def GET(self, url, args=None):
-        print("Get URL:",url)
-        s = self.connect('127.0.0.1', 80)
-        s.send("GET / HTTP/1.0\r\r\n\n")
-        data = (s.recv(1000000))
-        print data
-        s.shutdown(1)
-        s.close()
-        print 'Received', repr(data)
         code = 500
         body = ""
+        print "Given URL:",url
+
+        parsed = urlparse.urlparse(url)
+        print "PARSED:", parsed
+
+        # Figure out the Port.
+        thePort = parsed.port
+        if (thePort == None):
+            thePort = 80
+
+        # Figure out the URL
+        thePath = parsed.netloc.split(":")[0]
+
+        # Connect to Server and send the GET
+        s = self.connect(thePath, thePort)
+        s.send('GET '+parsed.path+' HTTP/1.1\r\nHost: '+thePath+'\r\n\r\n')
+
+        # Receive the data.
+        data = self.recvall(s)
+        print 'Received', repr(data)
+
+        # Update the code and body respectively.
+        code = int(self.get_code(data))
+        body = self.get_body(data)
+        print "CODE/BODY =",code, body
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        print("Post URL:",url)
+        print "Post URL:",url
         code = 500
         body = ""
         return HTTPResponse(code, body)
@@ -97,6 +122,8 @@ class HTTPClient(object):
     
 if __name__ == "__main__":
     client = HTTPClient()
+    #client.GET("http://127.0.0.1:27600/49872398432")
+    
     command = "GET"
     if (len(sys.argv) <= 1):
         help()
@@ -105,3 +132,6 @@ if __name__ == "__main__":
         print client.command( sys.argv[2], sys.argv[1] )
     else:
         print client.command( sys.argv[1] )   
+        
+    
+    
