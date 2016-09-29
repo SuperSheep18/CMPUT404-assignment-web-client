@@ -37,15 +37,25 @@ class HTTPClient(object):
 
     def connect(self, host, port):
         # use sockets!
-        return None
+        s = socket.socket(
+        socket.AF_INET, socket.SOCK_STREAM)
+        #now connect to the web server on port 80
+        # - the normal http port
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.connect((host, port))
+
+        return s
 
     def get_code(self, data):
+        print("Code: ", data)
         return None
 
     def get_headers(self,data):
+        print("Headers: ", data)
         return None
 
     def get_body(self, data):
+        print("Body: ", data)
         return None
 
     # read everything from the socket
@@ -61,11 +71,20 @@ class HTTPClient(object):
         return str(buffer)
 
     def GET(self, url, args=None):
+        print("Get URL:",url)
+        s = self.connect('127.0.0.1', 80)
+        s.send("GET / HTTP/1.0\r\r\n\n")
+        data = (s.recv(1000000))
+        print data
+        s.shutdown(1)
+        s.close()
+        print 'Received', repr(data)
         code = 500
         body = ""
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
+        print("Post URL:",url)
         code = 500
         body = ""
         return HTTPResponse(code, body)
