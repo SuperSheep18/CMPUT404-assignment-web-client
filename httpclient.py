@@ -51,8 +51,11 @@ class HTTPClient(object):
         return s
 
     def get_code(self, data):
-        print "Code:", data.split(" ")[1]
-        return data.split(" ")[1]
+        if (data):
+            print "Code:", data.split(" ")[1]
+            return int(data.split(" ")[1])
+        else:
+            return None
 
     def get_headers(self,data):
         print "Headers:", None
@@ -60,11 +63,11 @@ class HTTPClient(object):
 
     def get_body(self, data):
 
-        # Accounts for carriage returns in the body of text that splitting might miss.
-        #dex = data.index("\r\n\r\n")
-        #print "Body:", data[dex+4:]
-        print "Body:", data
-        return data
+        if (data):
+            print "Body:", data
+            return data
+        else:
+            return None
 
     # read everything from the socket
     def recvall(self, sock):
@@ -103,7 +106,7 @@ class HTTPClient(object):
         print 'Received', repr(data)
 
         # Update the code and body respectively.
-        code = int(self.get_code(data))
+        code = self.get_code(data)
         body = self.get_body(data)
         print "CODE/BODY =",code, body
         return HTTPResponse(code, body)
@@ -112,6 +115,32 @@ class HTTPClient(object):
         print "Post URL:",url
         code = 500
         body = ""
+        print "Given URL:",url
+
+        parsed = urlparse.urlparse(url)
+        print "PARSED:", parsed
+
+        # Figure out the Port.
+        thePort = parsed.port
+        if (thePort == None):
+            thePort = 80
+
+        # Figure out the URL
+        thePath = parsed.netloc.split(":")[0]
+
+        # Connect to Server and send the GET
+        s = self.connect(thePath, thePort)
+        theData = '{ "type": 2 }'
+        s.send('POST '+parsed.path+' HTTP/1.1\r\nHost: '+thePath+'\r\nContent-Length: '+str(len(theData))+'\r\nContent-Type: application/json'+'\r\n\r\n'+theData)
+
+        # Receive the data.
+        data = self.recvall(s)
+        print 'Received', repr(data)
+
+        # Update the code and body respectively.
+        code = self.get_code(data)
+        body = self.get_body(data)
+        print "CODE/BODY =",code, body
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
@@ -122,7 +151,6 @@ class HTTPClient(object):
     
 if __name__ == "__main__":
     client = HTTPClient()
-    #client.GET("http://127.0.0.1:27600/49872398432")
     
     command = "GET"
     if (len(sys.argv) <= 1):
