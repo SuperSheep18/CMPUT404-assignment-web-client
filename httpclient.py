@@ -57,9 +57,20 @@ class HTTPClient(object):
         else:
             return None
 
-    def get_headers(self,data):
-        print "Headers:", None
-        return None
+    def get_headers(self, path, host, args):
+        print "PATH/HOST:"+path+"/"+host
+        finalMessage = 'POST '+path+' HTTP/1.1\r\nHost: '+host+'\r\n'
+        finalMessage += "Connection: Close\r\n"
+        finalMessage += "Accept: */*\r\n"
+        if (args != None):
+            stuff = urllib.urlencode(args)
+            finalMessage += 'content-type:application/json\r\n'
+            finalMessage += 'content-length:'+str(len(stuff))+'\r\n'
+            finalMessage += stuff+'\r\n'
+
+        finalMessage += '\r\n'
+        #print finalMessage
+        return finalMessage
 
     def get_body(self, data):
 
@@ -131,10 +142,14 @@ class HTTPClient(object):
         # Connect to Server and send the GET
         s = self.connect(thePath, thePort)
         theData = '{ "type": 2 }'
-        s.send('POST '+parsed.path+' HTTP/1.1\r\nHost: '+thePath+'\r\nContent-Length: '+str(len(theData))+'\r\nContent-Type: application/json'+'\r\n\r\n'+theData)
+        try:
+            s.send(self.get_headers(parsed.path, thePath, args))
+        except:
+            sys.exit()
 
         # Receive the data.
         data = self.recvall(s)
+        s.close()
         print 'Received', repr(data)
 
         # Update the code and body respectively.
