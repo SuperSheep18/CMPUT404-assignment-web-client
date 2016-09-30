@@ -60,7 +60,6 @@ class HTTPClient(object):
             return None
 
     def get_headers(self, path, host, args=None):
-        print "PATH/HOST:"+path+"/"+host
         finalMessage = 'POST '+path+' HTTP/1.1\r\nHost: '+host+'\r\n'
         if (args):
             stuff = urllib.urlencode(args)
@@ -69,7 +68,6 @@ class HTTPClient(object):
             finalMessage += stuff+'\r\n'
 
         finalMessage += '\r\n'
-        print "FINAL MESSAGE=", finalMessage
         return finalMessage
 
     def get_body(self, data):
@@ -94,10 +92,8 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
-        print "Given URL:",url
 
         parsed = urlparse.urlparse(url)
-        print "PARSED:", parsed
 
         # Figure out the Port.
         thePort = parsed.port
@@ -112,22 +108,20 @@ class HTTPClient(object):
         # Receive the data.
         data = self.recvall(s)
         s.close()
-        print 'Received', repr(data)
+
+        # Print result to standard out.
+        sys.stdout.write('Received Response: '+repr(data))
 
         # Update the code and body respectively.
         code = self.get_code(data)
         body = self.get_body(data)
-        print "CODE/BODY =",code, body
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        print "Post URL:",url
         code = 500
         body = ""
-        print "Given URL:",url
 
         parsed = urlparse.urlparse(url)
-        print "PARSED:", parsed
 
         # Figure out the Port.
         thePort = parsed.port
@@ -142,12 +136,13 @@ class HTTPClient(object):
         # Receive the data.
         data = self.recvall(s)
         s.close()
-        print 'Received', repr(data)
+
+        # Print result to standard out.
+        sys.stdout.write('Received Response: '+repr(data))
 
         # Update the code and body respectively.
         code = self.get_code(data)
         body = self.get_body(data)
-        print "CODE/BODY =",code, body
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
