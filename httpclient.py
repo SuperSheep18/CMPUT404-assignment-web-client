@@ -38,6 +38,8 @@ class HTTPClient(object):
 
     def connect(self, host, port):
         # use sockets!
+        if (port == None):
+            port = 80
         print "Conecting to:",host, "on", port
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -57,28 +59,25 @@ class HTTPClient(object):
         else:
             return None
 
-    def get_headers(self, path, host, args):
+    def get_headers(self, path, host, args=None):
         print "PATH/HOST:"+path+"/"+host
         finalMessage = 'POST '+path+' HTTP/1.1\r\nHost: '+host+'\r\n'
-        finalMessage += "Connection: Close\r\n"
-        finalMessage += "Accept: */*\r\n"
-        if (args != None):
+        if (args):
             stuff = urllib.urlencode(args)
-            finalMessage += 'content-type:application/json\r\n'
-            finalMessage += 'content-length:'+str(len(stuff))+'\r\n'
+            finalMessage += 'content-type: application/json\r\n'
+            finalMessage += 'content-length: '+str(len(stuff))+'\r\n\r\n'
             finalMessage += stuff+'\r\n'
 
         finalMessage += '\r\n'
-        #print finalMessage
+        print "FINAL MESSAGE=", finalMessage
         return finalMessage
 
     def get_body(self, data):
-
-        if (data):
-            print "Body:", data
-            return data
+        bodyExists = len(data.split("\r\n\r\n")) > 1
+        if bodyExists:
+            return data.split("\r\n\r\n")[1]
         else:
-            return None
+            return data
 
     # read everything from the socket
     def recvall(self, sock):
@@ -102,18 +101,17 @@ class HTTPClient(object):
 
         # Figure out the Port.
         thePort = parsed.port
-        if (thePort == None):
-            thePort = 80
 
         # Figure out the URL
-        thePath = parsed.netloc.split(":")[0]
+        theHost = parsed.netloc.split(":")[0]
 
         # Connect to Server and send the GET
-        s = self.connect(thePath, thePort)
-        s.send('GET '+parsed.path+' HTTP/1.1\r\nHost: '+thePath+'\r\n\r\n')
+        s = self.connect(theHost, thePort)
+        s.send('GET '+parsed.path+' HTTP/1.1\r\nHost: '+theHost+'\r\n\r\n')
 
         # Receive the data.
         data = self.recvall(s)
+        s.close()
         print 'Received', repr(data)
 
         # Update the code and body respectively.
@@ -133,19 +131,13 @@ class HTTPClient(object):
 
         # Figure out the Port.
         thePort = parsed.port
-        if (thePort == None):
-            thePort = 80
 
         # Figure out the URL
-        thePath = parsed.netloc.split(":")[0]
+        theHost = parsed.netloc.split(":")[0]
 
         # Connect to Server and send the GET
-        s = self.connect(thePath, thePort)
-        theData = '{ "type": 2 }'
-        try:
-            s.send(self.get_headers(parsed.path, thePath, args))
-        except:
-            sys.exit()
+        s = self.connect(theHost, thePort)
+        s.send(self.get_headers(parsed.path, theHost, args))
 
         # Receive the data.
         data = self.recvall(s)
